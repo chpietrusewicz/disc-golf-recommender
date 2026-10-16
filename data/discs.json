@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "dataset_version": "2026-10-07",
+    "attribution": "Disc data by Try Discs (https://trydiscs.com)",
+    "total": 5, "count": 5, "limit": 100, "offset": 0
+  },
+  "data": [
+    {
+      "slug": "innova/destroyer",
+      "brand": "Innova",
+      "name": "Destroyer",
+      "url": "https://trydiscs.com/product/innova/destroyer",
+      "type": "Distance Driver",
+      "speed": 12, "glide": 5, "turn": -1, "fade": 3,
+      "stability": 2,
+      "bead": "Beadless",
+      "discontinued": false,
+      "specs": {
+        "diameter_cm": 21.1, "height_cm": 1.4,
+        "rim_depth_cm": 1.2, "rim_thickness_cm": 2.2,
+        "inside_rim_diameter_cm": 16.7,
+        "rim_depth_diameter_ratio": 5.7, "rim_configuration": 30.5
+      }
+    },
+    {
+      "slug": "innova/aviar",
+      "brand": "Innova",
+      "name": "Aviar",
+      "url": "https://trydiscs.com/product/innova/aviar",
+      "type": "Putter",
+      "speed": 2, "glide": 3, "turn": 0, "fade": 1,
+      "stability": 1,
+      "bead": "Beadless",
+      "discontinued": false,
+      "specs": {
+        "diameter_cm": 21.1, "height_cm": 1.6,
+        "rim_depth_cm": 1.1, "rim_thickness_cm": 1.5,
+        "inside_rim_diameter_cm": 18.1,
+        "rim_depth_diameter_ratio": 5.2, "rim_configuration": 27.8
+      }
+    },
+    {
+      "slug": "discraft/buzzz",
+      "brand": "Discraft",
+      "name": "Buzzz",
+      "url": "https://trydiscs.com/product/discraft/buzzz",
+      "type": "Midrange",
+      "speed": 5, "glide": 4, "turn": -1, "fade": 1,
+      "stability": 0,
+      "bead": "Beadless",
+      "discontinued": false,
+      "specs": {
+        "diameter_cm": 21.7, "height_cm": 1.8,
+        "rim_depth_cm": 1.4, "rim_thickness_cm": 1.9,
+        "inside_rim_diameter_cm": 17.9,
+        "rim_depth_diameter_ratio": 6.5, "rim_configuration": 29.1
+      }
+    },
+    {
+      "slug": "innova/leopard3",
+      "brand": "Innova",
+      "name": "Leopard3",
+      "url": "https://trydiscs.com/product/innova/leopard3",
+      "type": "Fairway Driver",
+      "speed": 7, "glide": 5, "turn": -2, "fade": 1,
+      "stability": -1,
+      "bead": "Beadless",
+      "discontinued": false,
+      "specs": {
+        "diameter_cm": 21.1, "height_cm": 1.5,
+        "rim_depth_cm": 1.1, "rim_thickness_cm": 1.8,
+        "inside_rim_diameter_cm": 17.5,
+        "rim_depth_diameter_ratio": 5.2, "rim_configuration": 28.9
+      }
+    },
+    {
+      "slug": "dynamic-discs/judge",
+      "brand": "Dynamic Discs",
+      "name": "Judge",
+      "url": "https://trydiscs.com/product/dynamic-discs/judge",
+      "type": "Putter",
+      "speed": 2, "glide": 4, "turn": 0, "fade": 1,
+      "stability": 1,
+      "bead": "Beaded",
+      "discontinued": false,
+      "specs": {
+        "diameter_cm": 21.2, "height_cm": 1.9,
+        "rim_depth_cm": 1.3, "rim_thickness_cm": 1.4,
+        "inside_rim_diameter_cm": 18.4,
+        "rim_depth_diameter_ratio": 6.1, "rim_configuration": 26.4
+      }
+    }
+  ]
+}
