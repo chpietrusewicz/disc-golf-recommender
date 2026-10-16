@@ -1,13 +1,51 @@
+import os
+import requests
 import json
 import pandas as pd
+from dotenv import load_dotenv
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import re
 
-# 1. Load local JSON dataset (Mirrors the live API structure)
-print("Loading local JSON dataset...")
-with open('data/discs.json', 'r') as f:
-    json_data = json.load(f)
+load_dotenv()
+
+API_KEY = os.getenv("TRYDISCS_API_KEY")
+
+# Leave empty to recommend discs from every brand. Brand names are
+# case-insensitive, so "Innova" and "innova" behave the same way.
+RECOMMENDED_BRANDS = [
+    "Innova",
+    "Discraft",
+    "Dynamic Discs",
+    "MVP",
+    "Axiom",
+    "Latitude 64",
+    "Westside",
+    "Prodigy",
+    "Gateway",
+    "Discmania",
+    "Kastaplast"
+]
+
+if not API_KEY:
+    raise ValueError("API key missing! Make sure TRYDISCS_API_KEY is set in your .env file.")
+
+# Fetch live dataset from the Try Discs API
+print("Fetching live disc data from Try Discs API...")
+url = "https://api.trydiscs.com/v1/discs?limit=2500"
+
+headers = {
+    "X-API-Key": API_KEY
+}
+
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    json_data = response.json()  # <--- json_data is created right here!
+    print("Successfully fetched JSON response from API!")
+else:
+    print(f"API Request Failed ({response.status_code}): {response.text}")
+    exit()
 
 # 2. Extract and flatten records (handles nested 'specs')
 discs_list = json_data.get('data', [])
@@ -37,11 +75,16 @@ for disc in discs_list:
 
 df = pd.DataFrame(flattened_data)
 
+df = df[df['discontinued'] == False]
+if RECOMMENDED_BRANDS:
+    allowed_brands = {brand.casefold() for brand in RECOMMENDED_BRANDS}
+    df = df[df['brand'].fillna('').str.casefold().isin(allowed_brands)]
+
 def parse_comparative_query(user_query, df):
     query_lower = user_query.lower()
     
     # Check if the user is comparing to a specific disc (e.g., "than a destroyer")
-    match = re.search(r'than an?\s+([a-zA-Z0-9\s]+)', query_lower)
+    match = re.search(r'than an?\s+([a-zA-Z0-9][a-zA-Z0-9\s-]*?)\s*$', query_lower)
     
     if match:
         ref_disc_name = match.group(1).strip()
@@ -56,13 +99,16 @@ def parse_comparative_query(user_query, df):
             
             print(f"--> [Smart Parser] Found reference disc: {ref_row.iloc[0]['brand']} {ref_row.iloc[0]['name']} (Speed: {ref_speed}, Fade: {ref_fade})")
             
-            # If they want something "more stable", look for higher fade or similar speed
+            # Apply an explicit speed boundary first. The remaining query is
+            # still used below to rank candidates by their other preferences.
+            if "faster" in query_lower:
+                return df.loc[df['speed'] > ref_speed]
+            if "slower" in query_lower:
+                return df.loc[df['speed'] < ref_speed]
             if "more stable" in query_lower or "beefier" in query_lower:
-                filtered_df = (df['fade'] > ref_fade)
-                return filtered_df
+                return df.loc[df['fade'] > ref_fade]
             if "less stable" in query_lower or "flippier" in query_lower:
-                filtered_df = (df['turn'] < ref_turn)
-                return filtered_df
+                return df.loc[df['turn'] < ref_turn]
                 
     # Fallback: If no comparison pattern is found, return the full DataFrame
     return df
@@ -91,12 +137,12 @@ def make_profile(row):
     elif speed <= 5:
         profile += "slow putter approach midrange easy to throw low arm speed"
     else:
-        profile += "fairway control"
+        profile += "fairway control not too far"
 
-    if glide >= 5:
+    if glide >= 4:
         profile += " floaty glidey"
-    else:
-        profile += "gets down drops dead low-glide"
+    elif glide <= 2:
+        profile += "gets down drops dead low-glide goes nowhere"
 
     return profile
 
@@ -109,24 +155,19 @@ tfidf_matrix = vectorizer.fit_transform(df['profile'])
 
 # 5. Recommendation Function
 def smart_recommend(user_query, df, top_n=3):
-    # 1. Check if it's a comparative query and filter the dataset dynamically
+    # Filter once for hard comparison constraints, then rank only those
+    # candidates using the complete query and normal TF-IDF parsing.
     subset_df = parse_comparative_query(user_query, df)
-    
-    # If the smart parser filtered down our dataset, we vectorize only that subset
-    # (Or you can combine it with TF-IDF scoring on the subset)
-    if not subset_df.empty and len(subset_df) < len(df):
-        # Return top matches from the mathematically filtered subset
-        return subset_df[['brand', 'name', 'type', 'speed', 'fade']].head(top_n)
-    
     query_vec = vectorizer.transform([user_query])
-    scores = cosine_similarity(query_vec, tfidf_matrix).flatten()
+    candidate_matrix = vectorizer.transform(subset_df['profile'])
+    scores = cosine_similarity(query_vec, candidate_matrix).flatten()
     top_indices = scores.argsort()[-top_n:][::-1]
     
-    results = df.iloc[top_indices]
-    return results[['brand', 'name', 'type', 'speed', 'thickness']]
+    results = subset_df.iloc[top_indices]
+    return results[['brand', 'name', 'type', 'speed', 'glide', 'turn', 'fade']]
 
 # 6. Test it out
 if __name__ == "__main__":
-    test_query = "I want something flippier than a destroyer"
+    test_query = "i want something straight from MVP that is easy to throw"
     print(f"\nQuery: '{test_query}'\n")
     print(smart_recommend(test_query, df, top_n=3))
