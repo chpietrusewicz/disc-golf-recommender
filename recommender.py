@@ -11,8 +11,7 @@ load_dotenv()
 
 API_KEY = os.getenv("TRYDISCS_API_KEY")
 
-# Leave empty to recommend discs from every brand. Brand names are
-# case-insensitive, so "Innova" and "innova" behave the same way.
+#Case insensitive set of recommended brands for filtering
 RECOMMENDED_BRANDS = [
     "Innova",
     "Discraft",
@@ -30,7 +29,6 @@ RECOMMENDED_BRANDS = [
 if not API_KEY:
     raise ValueError("API key missing! Make sure TRYDISCS_API_KEY is set in your .env file.")
 
-# Fetch live dataset from the Try Discs API
 print("Fetching live disc data from Try Discs API...")
 url = "https://api.trydiscs.com/v1/discs?limit=2500"
 
@@ -41,13 +39,12 @@ headers = {
 response = requests.get(url, headers=headers)
 
 if response.status_code == 200:
-    json_data = response.json()  # <--- json_data is created right here!
+    json_data = response.json()
     print("Successfully fetched JSON response from API!")
 else:
     print(f"API Request Failed ({response.status_code}): {response.text}")
     exit()
 
-# 2. Extract and flatten records (handles nested 'specs')
 discs_list = json_data.get('data', [])
 flattened_data = []
 
@@ -83,13 +80,15 @@ if RECOMMENDED_BRANDS:
 def parse_comparative_query(user_query, df):
     query_lower = user_query.lower()
     
-    # Check if the user is comparing to a specific disc (e.g., "than a destroyer")
-    match = re.search(r'than an?\s+([a-zA-Z0-9][a-zA-Z0-9\s-]*?)\s*$', query_lower)
+    match = re.search(
+        r'(?:than an?\s+|as (?:an?\s+|the\s+))'
+        r'([a-zA-Z0-9][a-zA-Z0-9\s-]*?)\s*$',
+        query_lower,
+    )
     
     if match:
         ref_disc_name = match.group(1).strip()
         
-        # Find the reference disc in your DataFrame (case-insensitive search)
         ref_row = df[df['name'].str.lower() == ref_disc_name]
         
         if not ref_row.empty:
@@ -98,22 +97,29 @@ def parse_comparative_query(user_query, df):
             ref_turn = ref_row.iloc[0]['turn']
             
             print(f"--> [Smart Parser] Found reference disc: {ref_row.iloc[0]['brand']} {ref_row.iloc[0]['name']} (Speed: {ref_speed}, Fade: {ref_fade})")
+
+            filtered_df = df
             
-            # Apply an explicit speed boundary first. The remaining query is
-            # still used below to rank candidates by their other preferences.
             if "faster" in query_lower:
-                return df.loc[df['speed'] > ref_speed]
+                filtered_df = filtered_df.loc[filtered_df['speed'] > ref_speed]
             if "slower" in query_lower:
-                return df.loc[df['speed'] < ref_speed]
+                filtered_df = filtered_df.loc[filtered_df['speed'] < ref_speed]
             if "more stable" in query_lower or "beefier" in query_lower:
-                return df.loc[df['fade'] > ref_fade]
+                filtered_df = filtered_df.loc[filtered_df['fade'] > ref_fade]
             if "less stable" in query_lower or "flippier" in query_lower:
-                return df.loc[df['turn'] < ref_turn]
+                filtered_df = filtered_df.loc[filtered_df['turn'] < ref_turn]
+            if "straighter" in query_lower:
+                filtered_df = filtered_df.loc[
+                    (filtered_df['turn'] + filtered_df['fade']).abs()
+                    < abs(ref_turn + ref_fade)
+                ]
+            if "same speed" in query_lower:
+                filtered_df = filtered_df.loc[filtered_df['speed'] == ref_speed]
+
+            return filtered_df
                 
-    # Fallback: If no comparison pattern is found, return the full DataFrame
     return df
 
-# 3. Build text profiles for TF-IDF matching
 def make_profile(row):
     turn = row['turn']
     fade = row['fade']
@@ -149,7 +155,6 @@ def make_profile(row):
 
 df['profile'] = df.apply(make_profile, axis=1)
 
-# 4. Vectorize text profiles
 vectorizer = TfidfVectorizer(stop_words='english')
 tfidf_matrix = vectorizer.fit_transform(df['profile'])
 
@@ -158,6 +163,9 @@ def smart_recommend(user_query, df, top_n=3):
     # Filter once for hard comparison constraints, then rank only those
     # candidates using the complete query and normal TF-IDF parsing.
     subset_df = parse_comparative_query(user_query, df)
+    if subset_df.empty:
+        return subset_df[['brand', 'name', 'type', 'speed', 'glide', 'turn', 'fade']]
+
     query_vec = vectorizer.transform([user_query])
     candidate_matrix = vectorizer.transform(subset_df['profile'])
     scores = cosine_similarity(query_vec, candidate_matrix).flatten()
@@ -166,7 +174,6 @@ def smart_recommend(user_query, df, top_n=3):
     results = subset_df.iloc[top_indices]
     return results[['brand', 'name', 'type', 'speed', 'glide', 'turn', 'fade']]
 
-# 6. Test it out
 if __name__ == "__main__":
     test_query = "i want something straight from MVP that is easy to throw"
     print(f"\nQuery: '{test_query}'\n")

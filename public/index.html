@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discwise | Disc recommender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/">
+        <span class="brand-mark">🥏</span>
+        <span>Discwise</span>
+      </a>
+      <p class="sidebar-kicker">Tune the recommendation pool</p>
+      <div class="rule"></div>
+      <label class="field-label" for="brand-search">Brands to recommend</label>
+      <input id="brand-search" class="brand-search" type="search" placeholder="Search brands">
+      <div id="brand-list" class="brand-list" aria-live="polite"></div>
+      <button id="select-all" class="text-button" type="button">Select all</button>
+      <div class="rule"></div>
+      <p id="brand-count" class="sidebar-note">Loading brands...</p>
+    </aside>
+
+    <main class="main-content">
+      <section class="hero">
+        <p class="eyebrow">A smarter way to fill your bag</p>
+        <h1>Find the disc<br><em>that feels like you.</em></h1>
+        <p class="hero-copy">Describe the flight you want in plain English. Discwise blends flight numbers, disc profiles, and your brand preferences to surface a short list worth throwing.</p>
+      </section>
+
+      <section class="search-panel">
+        <label class="field-label" for="query">What are you looking for?</label>
+        <textarea id="query" rows="2" placeholder="Something flippy but faster than a Destroyer"></textarea>
+        <div class="examples">
+          <span>Try an example</span>
+          <button type="button" data-example="Something straight and easy to throw">Straight & easy to throw</button>
+          <button type="button" data-example="A flippy fairway driver">Flippy fairway driver</button>
+          <button type="button" data-example="Something faster than a Destroyer">Faster than a Destroyer</button>
+        </div>
+        <button id="recommend" class="primary-button" type="button">Find my discs <span>→</span></button>
+      </section>
+
+      <section id="results-section" class="results-section" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Your shortlist</p>
+            <h2>Worth a throw</h2>
+          </div>
+          <p id="result-summary" class="result-summary"></p>
+        </div>
+        <div id="results" class="results-grid"></div>
+      </section>
+      <div id="message" class="message" role="status" hidden></div>
+    </main>
+  </div>
+  <script src="/script.js"></script>
+</body>
+</html>
